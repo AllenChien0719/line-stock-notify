@@ -5,24 +5,25 @@ from linebot.models import TextSendMessage
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime
 import requests
+import os
 
 app = Flask(__name__)
 
 # LINE Messaging API 配置
-CHANNEL_ACCESS_TOKEN = 'sI6VyBPWk0hwrehmA9l9WU4pey8LGog14MgEnwq4xcuVGYT3hO0NOlNzRuF2bmK4JKbpMP1OLUkKsI+PAujI63LqMnXKIh0UdQISMQp3xjb7NbwrIkJnXxyMDZIXHzIRyrwWls0pnbuybz9HXjJb8AdB04t89/1O/w1cDnyilFU='
-CHANNEL_SECRET = '5a2c38f35b7b6100b24af0467dcf9270'
+CHANNEL_ACCESS_TOKEN = '你的_CHANNEL_ACCESS_TOKEN'
+CHANNEL_SECRET = '你的_CHANNEL_SECRET'
 line_bot_api = LineBotApi(CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(CHANNEL_SECRET)
 
 # Fugle API 配置
 FUGLE_API_URL = 'https://api.fugle.tw/v1/market/stock'
-FUGLE_API_KEY = 'ZDc5Y2FlMDYtYzI3Yy00ODAyLWJmMzMtMmZlODFjZDIzMGJiIDA2NDBjMTc0LTRlZTAtNDc5NC1iZGQ0LTI2MjI0MmNhMGZiZQ=='
+FUGLE_API_KEY = '你的_FUGLE_API_KEY'
 
 # 指定要查詢的股票代碼清單
 STOCK_SYMBOLS = ['2330', '2317', '6505', '2454', '3008']  # 這裡用的是台灣股票代碼（可根據需求更改）
 
 # 指定要推送通知的 LINE 使用者 ID
-USER_ID = 'chienallen'
+USER_ID = '你的_USER_ID'
 
 def get_stock_price(symbol):
     """
@@ -61,4 +62,17 @@ def send_stock_prices():
         print(f"[{now}] 成功推送股價通知")
 
 # 設定排程
-scheduler = BackgroundScheduler
+scheduler = BackgroundScheduler()
+scheduler.add_job(send_stock_prices, 'interval', minutes=60)  # 每 60 分鐘執行一次
+scheduler.start()
+
+@app.route("/")
+def index():
+    return "LINE Stock Notify Service is running"
+
+if __name__ == "__main__":
+    # 讀取 Render 的端口環境變數，預設為 5000
+    port = int(os.environ.get("PORT", 5000))
+    
+    # 讓 Flask 在這個端口上運行
+    app.run(host='0.0.0.0', port=port)
