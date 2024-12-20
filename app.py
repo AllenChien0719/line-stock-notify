@@ -61,4 +61,4 @@ def send_stock_prices():
         print(f"[{now}] 成功推送股價通知")
 
 # 設定排程
-scheduler = BackgroundSchedule
+scheduler = BackgroundScheduler
