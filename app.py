@@ -51,28 +51,4 @@ def send_stock_prices():
             if price:
                 messages.append(f"{symbol}: {price} TWD")
             else:
-                messages.append(f"{symbol}: 無法取得股價")
-        
-        # 將所有股價合併成一條訊息
-        message_text = "\n".join(messages)
-        message = f"股票最新報價：\n{message_text}"
-        
-        # 發送通知到 LINE
-        line_bot_api.push_message(USER_ID, TextSendMessage(text=message))
-        print(f"[{now}] 成功推送股價通知")
-
-# 設定排程
-scheduler = BackgroundScheduler()
-scheduler.add_job(send_stock_prices, 'interval', minutes=60)  # 每 60 分鐘執行一次
-scheduler.start()
-
-@app.route("/")
-def index():
-    return "LINE Stock Notify Service is running"
-
-if __name__ == "__main__":
-    # 讀取 Render 的端口環境變數，預設為 10000
-    port = int(os.environ.get("PORT", 10000))
-    
-    # 讓 Flask 在這個端口上運行
-    app.run(host='0.0.0.0', port=port)
+      
