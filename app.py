@@ -16,15 +16,35 @@ CHANNEL_SECRET = '5a2c38f35b7b6100b24af0467dcf9270'
 line_bot_api = LineBotApi(CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(CHANNEL_SECRET)
 
-# 固定股票代碼列表
-FIXED_STOCKS = ["3093", "6548", "8070", "2646"]  # 可以根據需要修改成任意您想固定的股票代碼
+# 更新後的固定股票代碼列表
+FIXED_STOCKS = ["3093.TWO", "8070.TW", "6548.TWO", "2646.TW"]  # 更新為新的股票代碼
+
+# 股票代碼對應名稱的函數
+def get_stock_name(symbol):
+    """
+    根據股票代碼返回股票名稱
+    """
+    stock_names = {
+        "3093.TWO": "港建",
+        "8070.TW": "長華電",
+        "6548.TWO": "宏達電",
+        "2646.TW": "台灣高鐵"
+    }
+    return stock_names.get(symbol, "未知股票名稱")
 
 def get_stock_price(symbol):
     """
-    查詢單支股票的最新價格 (使用 Yahoo Finance)
+    查詢單支股票的最新價格 (支持查詢美股、台灣股市及OTC股票)
     """
     try:
-        stock = yf.Ticker(symbol + ".TW")  # 使用 .TW 指向台灣股市
+        # 根據股票代碼的結尾判斷市場
+        if symbol.endswith('.TW'):  # 台灣股市主板
+            stock = yf.Ticker(symbol)  # 台灣股市主板
+        elif symbol.endswith('.TWO'):  # 台灣OTC股市
+            stock = yf.Ticker(symbol)  # 台灣OTC股市
+        else:  # 美股
+            stock = yf.Ticker(symbol)  # 美股及其他市場不需要加後綴
+        
         data = stock.history(period="1d")  # 獲取最近一天的資料
         if not data.empty:
             return data['Close'][0]  # 取收盤價
@@ -41,10 +61,11 @@ def send_stock_prices():
         messages = []
         for symbol in FIXED_STOCKS:
             price = get_stock_price(symbol)
+            stock_name = get_stock_name(symbol)  # 自動從代碼中獲取股票名稱
             if price:
-                messages.append(f"{symbol}: {price} TWD")
+                messages.append(f"{stock_name} ({symbol}): {price} USD" if '.' not in symbol else f"{stock_name} ({symbol}): {price} TWD")
             else:
-                messages.append(f"{symbol}: 無法取得股價")
+                messages.append(f"{stock_name} ({symbol}): 無法取得股價")
         
         if messages:
             message_text = "\n".join(messages)
@@ -86,52 +107,17 @@ def handle_message(event):
     """
     user_id = event.source.user_id
 
-    if event.message.text == "目前股價":
-        send_stock_prices()
-        line_bot_api.reply_message(event.reply_token, TextSendMessage(text="目前股價通知已發送！"))
-
-    elif event.message.text == "指令":
+    if event.message.text == "指令":
         commands = (
             "可用指令列表：\n"
-            "1. 查詢固定股票 - 查詢所有固定股票的股價\n"
-            "2. 目前股價 - 推送所有固定股票的股價\n"
-            "3. 查詢股票 <股票代碼> - 查詢單支股票價格\n"
-            "4. 指令 - 查看可用指令列表"
+            "1. 查詢股票 <股票代碼> - 查詢單支股票價格\n"
+            "2. 查詢固定股票 - 查詢所有固定股票的價格\n"
+            "3. 指令 - 查看可用指令列表"
         )
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text=commands))
 
     elif event.message.text == "查詢固定股票":
-        # 顯示固定股票的價格
+        # 顯示固定股票的價格及名稱
         messages = []
         for symbol in FIXED_STOCKS:
-            price = get_stock_price(symbol)
-            if price:
-                messages.append(f"{symbol}: {price} TWD")
-            else:
-                messages.append(f"{symbol}: 無法取得股價")
-        
-        if messages:
-            message_text = "\n".join(messages)
-            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=message_text))
-
-    elif event.message.text.startswith("查詢股票"):
-        stock_code = event.message.text.replace("查詢股票", "").strip()
-        price = get_stock_price(stock_code)
-        if price:
-            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"{stock_code}: {price} TWD"))
-        else:
-            line_bot_api.reply_message(event.reply_token, TextSendMessage(text="無法取得股價，請確認股票代碼。"))
-
-    else:
-        line_bot_api.reply_message(event.reply_token, TextSendMessage(text="輸入 '指令' 查看可用指令列表。"))
-
-@app.route("/")
-def index():
-    return "LINE Stock Notify Service is running"
-
-if __name__ == "__main__":
-    # 讀取 Render 的端口環境變數，預設為 10000
-    port = int(os.environ.get("PORT", 10000))
-    
-    # 讓 Flask 在這個端口上運行
-    app.run(host='0.0.0.0', port=port)
+            price = get_stock_price(
