@@ -120,4 +120,36 @@ def handle_message(event):
         # 顯示固定股票的價格及名稱
         messages = []
         for symbol in FIXED_STOCKS:
-            price = get_stock_price(
+            price = get_stock_price(symbol)
+            stock_name = get_stock_name(symbol)  # 自動從代碼中獲取股票名稱
+            if price:
+                messages.append(f"{stock_name} ({symbol}): {price} USD" if '.' not in symbol else f"{stock_name} ({symbol}): {price} TWD")
+            else:
+                messages.append(f"{stock_name} ({symbol}): 無法取得股價")
+        
+        if messages:
+            message_text = "\n".join(messages)
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=message_text))
+
+    elif event.message.text.startswith("查詢股票"):
+        stock_code = event.message.text.replace("查詢股票", "").strip()
+        price = get_stock_price(stock_code)
+        stock_name = get_stock_name(stock_code)  # 自動從代碼中獲取股票名稱
+        if price:
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"{stock_name} ({stock_code}): {price} USD" if '.' not in stock_code else f"{stock_name} ({stock_code}): {price} TWD"))
+        else:
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text="無法取得股價，請確認股票代碼。"))
+
+    else:
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text="輸入 '指令' 查看可用指令列表。"))
+
+@app.route("/")
+def index():
+    return "LINE Stock Notify Service is running"
+
+if __name__ == "__main__":
+    # 讀取 Render 的端口環境變數，預設為 10000
+    port = int(os.environ.get("PORT", 10000))
+    
+    # 讓 Flask 在這個端口上運行
+    app.run(host='0.0.0.0', port=port)
