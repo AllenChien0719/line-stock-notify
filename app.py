@@ -1,7 +1,7 @@
 from flask import Flask, request, abort
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
-from linebot.models import TextSendMessage
+from linebot.models import TextSendMessage, MessageEvent, TextMessage  # 新增引入
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime
 import threading
