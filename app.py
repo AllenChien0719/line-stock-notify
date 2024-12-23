@@ -16,21 +16,20 @@ CHANNEL_SECRET = '5a2c38f35b7b6100b24af0467dcf9270'
 line_bot_api = LineBotApi(CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(CHANNEL_SECRET)
 
-# 更新後的固定股票代碼列表
+# 固定股票代碼列表
 FIXED_STOCKS = ["3093.TWO", "8070.TW", "6548.TWO", "2646.TW"]  # 更新為新的股票代碼
 
-# 股票代碼對應名稱的函數
 def get_stock_name(symbol):
     """
-    根據股票代碼返回股票名稱
+    根據股票代碼自動查詢股票名稱
     """
-    stock_names = {
-        "3093.TWO": "港建",
-        "8070.TW": "長華電",
-        "6548.TWO": "宏達電",
-        "2646.TW": "台灣高鐵"
-    }
-    return stock_names.get(symbol, "未知股票名稱")
+    try:
+        stock = yf.Ticker(symbol)  # 查詢股票
+        info = stock.info  # 獲取股票詳細資訊
+        return info.get("longName", "未知股票名稱")  # 返回股票名稱
+    except Exception as e:
+        print(f"查詢股票名稱時發生錯誤: {e}")
+        return "未知股票名稱"
 
 def get_stock_price(symbol):
     """
