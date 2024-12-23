@@ -21,7 +21,7 @@ FUGLE_API_URL = 'https://api.fugle.tw/v1/market/stock'
 FUGLE_API_KEY = 'ZDc5Y2FlMDYtYzI3Yy00ODAyLWJmMzMtMmZlODFjZDIzMGJiIDA2NDBjMTc0LTRlZTAtNDc5NC1iZGQ0LTI2MjI0MmNhMGZiZQ=='
 
 # 指定要查詢的股票代碼清單
-STOCK_SYMBOLS = ['2330', '2317', '6505', '2454', '3008']  # 這裡用的是台灣股票代碼（可根據需求更改）
+STOCK_SYMBOLS = ['8070', '6548', '3093', '2646']  # 這裡用的是台灣股票代碼（可根據需求更改）
 
 # 指定要推送通知的 LINE 使用者 ID
 USER_ID = 'chienallen'
