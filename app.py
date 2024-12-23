@@ -3,7 +3,6 @@ from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import TextSendMessage, MessageEvent, TextMessage
 from apscheduler.schedulers.background import BackgroundScheduler
-from datetime import datetime
 import threading
 import requests
 import os
@@ -11,41 +10,44 @@ import os
 app = Flask(__name__)
 
 # LINE Messaging API 配置
-CHANNEL_ACCESS_TOKEN = 'sI6VyBPWk0hwrehmA9l9WU4pey8LGog14MgEnwq4xcuVGYT3hO0NOlNzRuF2bmK4JKbpMP1OLUkKsI+PAujI63LqMnXKIh0UdQISMQp3xjb7NbwrIkJnXxyMDZIXHzIRyrwWls0pnbuybz9HXjJb8AdB04t89/1O/w1cDnyilFU='
-CHANNEL_SECRET = '5a2c38f35b7b6100b24af0467dcf9270'
+CHANNEL_ACCESS_TOKEN = 'YOUR_CHANNEL_ACCESS_TOKEN'
+CHANNEL_SECRET = 'YOUR_CHANNEL_SECRET'
 line_bot_api = LineBotApi(CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(CHANNEL_SECRET)
+
+# Fugle API 配置
+FUGLE_API_KEY = 'YOUR_FUGLE_API_KEY'
 
 # 用戶自選股票代碼存儲
 USER_SELECTED_STOCKS = {}
 
 def get_stock_price(symbol):
     """
-    使用 Yahoo Finance 查詢單支股票的最新價格。
+    使用 Fugle API 查詢單支股票的最新價格。
     """
     try:
         # 確保代碼以 .TW 結尾（台灣股票）
         if not symbol.endswith(".TW"):
             symbol += ".TW"
 
-        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
-        response = requests.get(url)
+        url = f"https://api.fugle.tw/v1/stock/{symbol}/quote"
+        headers = {
+            'Authorization': f'Bearer {FUGLE_API_KEY}'
+        }
+        response = requests.get(url, headers=headers)
 
         if response.status_code != 200:
-            print(f"Yahoo API 錯誤代碼: {response.status_code}, 原因: {response.text}")
+            print(f"Fugle API 錯誤代碼: {response.status_code}, 原因: {response.text}")
             return None
 
         data = response.json()
         # 確認返回結構是否正確
-        if "chart" in data and "result" in data["chart"] and data["chart"]["result"]:
-            result = data["chart"]["result"][0]
-            meta = result.get("meta", {})
-            price = meta.get("regularMarketPrice")
-
+        if "data" in data and "quote" in data["data"]:
+            price = data["data"]["quote"]["last"]
             if price is not None:
                 return price
             else:
-                print(f"未找到價格，返回數據: {meta}")
+                print(f"未找到價格，返回數據: {data}")
         else:
             print(f"無效的 API 返回結構: {data}")
     except requests.exceptions.RequestException as e:
@@ -156,10 +158,6 @@ def handle_message(event):
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text=commands))
     else:
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text="輸入 '指令' 查看可用指令列表。"))
-
-@app.route("/")
-def index():
-    return "LINE Stock Notify Service is running"
 
 @app.route("/debug")
 def debug():
