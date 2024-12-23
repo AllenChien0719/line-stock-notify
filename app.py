@@ -17,7 +17,7 @@ line_bot_api = LineBotApi(CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(CHANNEL_SECRET)
 
 # 固定股票代碼列表
-FIXED_STOCKS = ["2330", "2317", "2412", "6505"]  # 可以根據需要修改成任意您想固定的股票代碼
+FIXED_STOCKS = ["3093", "6548", "8070", "2646"]  # 可以根據需要修改成任意您想固定的股票代碼
 
 def get_stock_price(symbol):
     """
