@@ -26,10 +26,10 @@ def get_stock_name(symbol):
     try:
         stock = yf.Ticker(symbol)
         info = stock.info
-        return info.get("longName", "未知股票名稱")  # 根據 yfinance 提供的股票名稱
+        return info.get("longName", symbol)  # 根據 yfinance 提供的股票名稱，若無則回傳代碼
     except Exception as e:
         print(f"查詢股票名稱 {symbol} 時發生錯誤: {e}")
-        return "未知股票名稱"
+        return symbol  # 返回代碼作為後備
 
 def get_stock_price(symbol):
     """
