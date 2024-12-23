@@ -4,26 +4,27 @@ from linebot.exceptions import InvalidSignatureError
 from linebot.models import TextSendMessage
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime
+import threading
 import requests
 import os
 
 app = Flask(__name__)
 
 # LINE Messaging API 配置
-CHANNEL_ACCESS_TOKEN = '你的_CHANNEL_ACCESS_TOKEN'
-CHANNEL_SECRET = '你的_CHANNEL_SECRET'
+CHANNEL_ACCESS_TOKEN = 'sI6VyBPWk0hwrehmA9l9WU4pey8LGog14MgEnwq4xcuVGYT3hO0NOlNzRuF2bmK4JKbpMP1OLUkKsI+PAujI63LqMnXKIh0UdQISMQp3xjb7NbwrIkJnXxyMDZIXHzIRyrwWls0pnbuybz9HXjJb8AdB04t89/1O/w1cDnyilFU='
+CHANNEL_SECRET = '5a2c38f35b7b6100b24af0467dcf9270'
 line_bot_api = LineBotApi(CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(CHANNEL_SECRET)
 
 # Fugle API 配置
 FUGLE_API_URL = 'https://api.fugle.tw/v1/market/stock'
-FUGLE_API_KEY = '你的_FUGLE_API_KEY'
+FUGLE_API_KEY = 'ZDc5Y2FlMDYtYzI3Yy00ODAyLWJmMzMtMmZlODFjZDIzMGJiIDA2NDBjMTc0LTRlZTAtNDc5NC1iZGQ0LTI2MjI0MmNhMGZiZQ=='
 
 # 指定要查詢的股票代碼清單
 STOCK_SYMBOLS = ['2330', '2317', '6505', '2454', '3008']  # 這裡用的是台灣股票代碼（可根據需求更改）
 
 # 指定要推送通知的 LINE 使用者 ID
-USER_ID = '你的_USER_ID'
+USER_ID = 'chienallen'
 
 def get_stock_price(symbol):
     """
@@ -37,8 +38,7 @@ def get_stock_price(symbol):
         data = response.json()
         if "price" in data:
             return data["price"]
-    else:
-        return None  # 確保 `else` 下面的程式碼有正確縮排
+    return None  # 確保無法取得價格時返回 None
 
 def send_stock_prices():
     """
@@ -72,12 +72,22 @@ def webhook():
     signature = request.headers['X-Line-Signature']
     body = request.get_data(as_text=True)
 
+    # 啟動新執行緒處理 Webhook 事件
+    threading.Thread(target=process_event, args=(body, signature)).start()
+
+    # 立即回應 Line 的 Webhook 請求
+    return 'OK', 200
+
+def process_event(body, signature):
+    """
+    背景執行 Webhook 事件處理
+    """
     try:
-        # 使用 LINE Webhook Handler 處理 Webhook 事件
         handler.handle(body, signature)
-        return 'OK', 200
     except InvalidSignatureError:
-        abort(400)
+        print("Invalid Signature Error")
+    except Exception as e:
+        print(f"處理事件時發生錯誤: {e}")
 
 @app.route("/")
 def index():
