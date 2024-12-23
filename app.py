@@ -5,7 +5,7 @@ from linebot.models import TextSendMessage, MessageEvent, TextMessage
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime
 import threading
-import requests
+import yfinance as yf  # 引入 yfinance 用於查詢股價
 import os
 
 app = Flask(__name__)
@@ -16,10 +16,6 @@ CHANNEL_SECRET = '5a2c38f35b7b6100b24af0467dcf9270'
 line_bot_api = LineBotApi(CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(CHANNEL_SECRET)
 
-# Fugle API 配置
-FUGLE_API_URL = 'https://api.fugle.tw/v1/market/stock'
-FUGLE_API_KEY = 'ZDc5Y2FlMDYtYzI3Yy00ODAyLWJmMzMtMmZlODFjZDIzMGJiIDA2NDBjMTc0LTRlZTAtNDc5NC1iZGQ0LTI2MjI0MmNhMGZiZQ==' 
-
 # 用戶自選股票代碼存儲
 USER_SELECTED_STOCKS = {}
 
@@ -28,17 +24,16 @@ USER_ID = 'chienallen'
 
 def get_stock_price(symbol):
     """
-    查詢單支股票的最新價格 (使用 Fugle API)
+    查詢單支股票的最新價格 (使用 Yahoo Finance)
     """
-    headers = {
-        'Authorization': f'Bearer {FUGLE_API_KEY}'
-    }
-    response = requests.get(f"{FUGLE_API_URL}/{symbol}", headers=headers)
-    if response.status_code == 200:
-        data = response.json()
-        if "price" in data:
-            return data["price"]
-    return None  # 確保無法取得價格時返回 None
+    try:
+        stock = yf.Ticker(symbol + ".TW")  # 使用 .TW 指向台灣股市
+        data = stock.history(period="1d")  # 獲取最近一天的資料
+        if not data.empty:
+            return data['Close'][0]  # 取收盤價
+    except Exception as e:
+        print(f"查詢股票 {symbol} 時發生錯誤: {e}")
+    return None  # 若無法取得價格，返回 None
 
 def send_stock_prices():
     """
