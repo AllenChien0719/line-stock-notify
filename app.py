@@ -38,15 +38,22 @@ def get_stock_price(symbol):
         data = response.json()
         # 確認返回結構是否正確
         if "chart" in data and "result" in data["chart"] and data["chart"]["result"]:
-            price = data["chart"]["result"][0]["meta"].get("regularMarketPrice")
-            if price:
+            result = data["chart"]["result"][0]
+            meta = result.get("meta", {})
+            price = meta.get("regularMarketPrice")
+
+            if price is not None:
                 return price
             else:
-                print(f"未找到價格: {data}")
+                print(f"未找到價格，返回數據: {meta}")
         else:
-            print(f"無效的 API 返回: {data}")
+            print(f"無效的 API 返回結構: {data}")
+    except requests.exceptions.RequestException as e:
+        print(f"網路錯誤: {e}")
+    except KeyError as e:
+        print(f"解析數據時出現 KeyError: {e}")
     except Exception as e:
-        print(f"取得股票價格時發生錯誤: {e}")
+        print(f"取得股票價格時發生未知錯誤: {e}")
     return None
 
 def send_all_stock_prices(user_id):
