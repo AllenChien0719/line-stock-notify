@@ -118,9 +118,28 @@ def handle_message(event):
             line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"{stock_code}: {price} TWD"))
         else:
             line_bot_api.reply_message(event.reply_token, TextSendMessage(text="無法取得股價，請確認股票代碼。"))
-        
+
+    elif event.message.text == "指令":
+        commands = (
+            "可用指令列表：\n"
+            "1. 新增股票 <股票代碼> - 新增自選股票\n"
+            "2. 刪除股票 <股票代碼> - 刪除自選股票\n"
+            "3. 查詢股票 <股票代碼> - 查詢單支股票價格\n"
+            "4. 目前股價 - 推送所有自選股票的股價\n"
+            "5. 查詢自選股票 - 查看已新增的自選股票\n"
+            "6. 指令 - 查看可用指令列表"
+        )
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=commands))
+
+    elif event.message.text == "查詢自選股票":
+        stocks = USER_SELECTED_STOCKS.get(user_id, [])
+        if stocks:
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text="您的自選股票：\n" + "\n".join(stocks)))
+        else:
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text="您尚未新增任何股票。"))
+
     else:
-        line_bot_api.reply_message(event.reply_token, TextSendMessage(text="請輸入指令：\n1. 新增股票 <股票代碼>\n2. 刪除股票 <股票代碼>\n3. 查詢股票 <股票代碼>\n4. 目前股價"))
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text="輸入 '指令' 查看可用指令列表。"))
 
 @app.route("/")
 def index():
