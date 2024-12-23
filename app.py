@@ -24,14 +24,30 @@ def get_stock_price(symbol):
     使用 Yahoo Finance 查詢單支股票的最新價格。
     """
     try:
-        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}.TW"
+        # 確保代碼以 .TW 結尾（台灣股票）
+        if not symbol.endswith(".TW"):
+            symbol += ".TW"
+
+        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
         response = requests.get(url)
+
+        if response.status_code != 200:
+            print(f"Yahoo API 錯誤代碼: {response.status_code}, 原因: {response.text}")
+            return None
+
         data = response.json()
-        price = data['chart']['result'][0]['meta']['regularMarketPrice']
-        return price
+        # 確認返回結構是否正確
+        if "chart" in data and "result" in data["chart"] and data["chart"]["result"]:
+            price = data["chart"]["result"][0]["meta"].get("regularMarketPrice")
+            if price:
+                return price
+            else:
+                print(f"未找到價格: {data}")
+        else:
+            print(f"無效的 API 返回: {data}")
     except Exception as e:
         print(f"取得股票價格時發生錯誤: {e}")
-        return None
+    return None
 
 def send_all_stock_prices(user_id):
     """
@@ -137,6 +153,11 @@ def handle_message(event):
 @app.route("/")
 def index():
     return "LINE Stock Notify Service is running"
+
+@app.route("/debug")
+def debug():
+    """ 測試 URL，用於檢查服務狀態 """
+    return f"Service is running on port {os.environ.get('PORT', '10000')}"
 
 if __name__ == "__main__":
     # 讀取 Render 的端口環境變數，預設為 10000
