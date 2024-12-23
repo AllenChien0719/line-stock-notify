@@ -134,4 +134,13 @@ def handle_message(event):
     else:
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text="輸入 '指令' 查看可用指令列表。"))
 
-@app.route("/
+@app.route("/")
+def index():
+    return "LINE Stock Notify Service is running"
+
+if __name__ == "__main__":
+    # 讀取 Render 的端口環境變數，預設為 10000
+    port = int(os.environ.get("PORT", 10000))
+
+    # 讓 Flask 在這個端口上運行
+    app.run(host='0.0.0.0', port=port)
