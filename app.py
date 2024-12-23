@@ -16,20 +16,22 @@ CHANNEL_SECRET = '5a2c38f35b7b6100b24af0467dcf9270'
 line_bot_api = LineBotApi(CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(CHANNEL_SECRET)
 
-# 固定股票代碼列表
+# 固定股票代碼列表 (對應正確名稱)
 FIXED_STOCKS = ["3093.TWO", "8070.TW", "6548.TWO", "2646.TW"]  # 更新為新的股票代碼
+
+# 股票代碼與名稱對應字典
+STOCK_NAMES = {
+    "3093.TWO": "港建",
+    "8070.TW": "長華電",
+    "6548.TWO": "長科",
+    "2646.TW": "星宇航空"
+}
 
 def get_stock_name(symbol):
     """
-    根據股票代碼自動查詢股票名稱
+    根據股票代碼自動查詢股票名稱，若查詢不到則使用預設名稱。
     """
-    try:
-        stock = yf.Ticker(symbol)  # 查詢股票
-        info = stock.info  # 獲取股票詳細資訊
-        return info.get("longName", "未知股票名稱")  # 返回股票名稱
-    except Exception as e:
-        print(f"查詢股票名稱時發生錯誤: {e}")
-        return "未知股票名稱"
+    return STOCK_NAMES.get(symbol, "未知股票名稱")  # 根據字典查找名稱，若查無則返回 "未知股票名稱"
 
 def get_stock_price(symbol):
     """
@@ -60,7 +62,7 @@ def send_stock_prices():
         messages = []
         for symbol in FIXED_STOCKS:
             price = get_stock_price(symbol)
-            stock_name = get_stock_name(symbol)  # 自動從代碼中獲取股票名稱
+            stock_name = get_stock_name(symbol)  # 使用對應字典中的股票名稱
             if price:
                 messages.append(f"{stock_name} ({symbol}): {price} USD" if '.' not in symbol else f"{stock_name} ({symbol}): {price} TWD")
             else:
@@ -120,7 +122,7 @@ def handle_message(event):
         messages = []
         for symbol in FIXED_STOCKS:
             price = get_stock_price(symbol)
-            stock_name = get_stock_name(symbol)  # 自動從代碼中獲取股票名稱
+            stock_name = get_stock_name(symbol)  # 使用對應字典中的股票名稱
             if price:
                 messages.append(f"{stock_name} ({symbol}): {price} USD" if '.' not in symbol else f"{stock_name} ({symbol}): {price} TWD")
             else:
@@ -133,7 +135,7 @@ def handle_message(event):
     elif event.message.text.startswith("查詢股票"):
         stock_code = event.message.text.replace("查詢股票", "").strip()
         price = get_stock_price(stock_code)
-        stock_name = get_stock_name(stock_code)  # 自動從代碼中獲取股票名稱
+        stock_name = get_stock_name(stock_code)  # 使用對應字典中的股票名稱
         if price:
             line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"{stock_name} ({stock_code}): {price} USD" if '.' not in stock_code else f"{stock_name} ({stock_code}): {price} TWD"))
         else:
