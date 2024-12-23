@@ -18,7 +18,7 @@ handler = WebhookHandler(CHANNEL_SECRET)
 
 # Fugle API 配置
 FUGLE_API_URL = 'https://api.fugle.tw/v1/market/stock'
-FUGLE_API_KEY = 'ZDc5Y2FlMDYtYzI3Yy00ODAyLWJmMzMtMmZlODFjZDIzMGJiIDA2NDBjMTc0LTRlZTAtNDc5NC1iZGQ0LTI2MjI0MmNhMGZiZQ=='
+FUGLE_API_KEY = 'ZDc5Y2FlMDYtYzI3Yy00ODAyLWJmMzMtMmZlODFjZDIzMGJiIDA2NDBjMTc0LTRlZTAtNDc5NC1iZGQ0LTI2MjI0MmNhMGZiZQ==' 
 
 # 指定要查詢的股票代碼清單
 STOCK_SYMBOLS = ['8070', '6548', '3093', '2646']  # 這裡用的是台灣股票代碼（可根據需求更改）
@@ -88,6 +88,17 @@ def process_event(body, signature):
         print("Invalid Signature Error")
     except Exception as e:
         print(f"處理事件時發生錯誤: {e}")
+
+@handler.add(MessageEvent, message=TextMessage)
+def handle_message(event):
+    """
+    處理來自 LINE 使用者的訊息
+    """
+    if event.message.text == "目前股價":
+        send_stock_prices()
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text="目前股價通知已發送！"))
+    else:
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text="請輸入「目前股價」來查詢股價！"))
 
 @app.route("/")
 def index():
