@@ -16,11 +16,8 @@ CHANNEL_SECRET = '5a2c38f35b7b6100b24af0467dcf9270'
 line_bot_api = LineBotApi(CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(CHANNEL_SECRET)
 
-# 用戶自選股票代碼存儲
-USER_SELECTED_STOCKS = {}
-
-# 指定要推送通知的 LINE 使用者 ID
-USER_ID = 'chienallen'
+# 固定股票代碼列表
+FIXED_STOCKS = ["2330", "2317", "2412", "6505"]  # 可以根據需要修改成任意您想固定的股票代碼
 
 def get_stock_price(symbol):
     """
@@ -37,13 +34,12 @@ def get_stock_price(symbol):
 
 def send_stock_prices():
     """
-    每小時推送指定股票的最新股價
+    每小時推送固定股票的最新股價
     """
     now = datetime.now()
     if now.weekday() < 5 and 9 <= now.hour < 13:  # 檢查是否為工作日且在指定時段內
         messages = []
-        stocks_to_send = USER_SELECTED_STOCKS.get(USER_ID, [])
-        for symbol in stocks_to_send:
+        for symbol in FIXED_STOCKS:
             price = get_stock_price(symbol)
             if price:
                 messages.append(f"{symbol}: {price} TWD")
@@ -94,22 +90,29 @@ def handle_message(event):
         send_stock_prices()
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text="目前股價通知已發送！"))
 
-    elif event.message.text.startswith("新增股票"):
-        stock_code = event.message.text.replace("新增股票", "").strip()
-        if len(USER_SELECTED_STOCKS.get(user_id, [])) < 10:
-            USER_SELECTED_STOCKS.setdefault(user_id, []).append(stock_code)
-            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"已新增股票 {stock_code} 到您的自選股。"))
-        else:
-            line_bot_api.reply_message(event.reply_token, TextSendMessage(text="最多只能選擇10支股票。"))
+    elif event.message.text == "指令":
+        commands = (
+            "可用指令列表：\n"
+            "1. 查詢固定股票 - 查詢所有固定股票的股價\n"
+            "2. 目前股價 - 推送所有固定股票的股價\n"
+            "3. 查詢股票 <股票代碼> - 查詢單支股票價格\n"
+            "4. 指令 - 查看可用指令列表"
+        )
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=commands))
 
-    elif event.message.text.startswith("刪除股票"):
-        stock_code = event.message.text.replace("刪除股票", "").strip()
-        stocks = USER_SELECTED_STOCKS.get(user_id, [])
-        if stock_code in stocks:
-            stocks.remove(stock_code)
-            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"已刪除股票 {stock_code}。"))
-        else:
-            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"您沒有選擇這支股票 {stock_code}。"))
+    elif event.message.text == "查詢固定股票":
+        # 顯示固定股票的價格
+        messages = []
+        for symbol in FIXED_STOCKS:
+            price = get_stock_price(symbol)
+            if price:
+                messages.append(f"{symbol}: {price} TWD")
+            else:
+                messages.append(f"{symbol}: 無法取得股價")
+        
+        if messages:
+            message_text = "\n".join(messages)
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=message_text))
 
     elif event.message.text.startswith("查詢股票"):
         stock_code = event.message.text.replace("查詢股票", "").strip()
@@ -118,25 +121,6 @@ def handle_message(event):
             line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"{stock_code}: {price} TWD"))
         else:
             line_bot_api.reply_message(event.reply_token, TextSendMessage(text="無法取得股價，請確認股票代碼。"))
-
-    elif event.message.text == "指令":
-        commands = (
-            "可用指令列表：\n"
-            "1. 新增股票 <股票代碼> - 新增自選股票\n"
-            "2. 刪除股票 <股票代碼> - 刪除自選股票\n"
-            "3. 查詢股票 <股票代碼> - 查詢單支股票價格\n"
-            "4. 目前股價 - 推送所有自選股票的股價\n"
-            "5. 查詢自選股票 - 查看已新增的自選股票\n"
-            "6. 指令 - 查看可用指令列表"
-        )
-        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=commands))
-
-    elif event.message.text == "查詢自選股票":
-        stocks = USER_SELECTED_STOCKS.get(user_id, [])
-        if stocks:
-            line_bot_api.reply_message(event.reply_token, TextSendMessage(text="您的自選股票：\n" + "\n".join(stocks)))
-        else:
-            line_bot_api.reply_message(event.reply_token, TextSendMessage(text="您尚未新增任何股票。"))
 
     else:
         line_bot_api.reply_message(event.reply_token, TextSendMessage(text="輸入 '指令' 查看可用指令列表。"))
