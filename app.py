@@ -19,19 +19,17 @@ handler = WebhookHandler(CHANNEL_SECRET)
 # 固定股票代碼列表 (對應正確名稱)
 FIXED_STOCKS = ["3093.TWO", "8070.TW", "6548.TWO", "2646.TW"]  # 更新為新的股票代碼
 
-# 股票代碼與名稱對應字典
-STOCK_NAMES = {
-    "3093.TWO": "港建",
-    "8070.TW": "長華電",
-    "6548.TWO": "長科",
-    "2646.TW": "星宇航空"
-}
-
 def get_stock_name(symbol):
     """
-    根據股票代碼自動查詢股票名稱，若查詢不到則使用預設名稱。
+    根據股票代碼自動查詢股票名稱
     """
-    return STOCK_NAMES.get(symbol, "未知股票名稱")  # 根據字典查找名稱，若查無則返回 "未知股票名稱"
+    try:
+        stock = yf.Ticker(symbol)
+        info = stock.info
+        return info.get("longName", "未知股票名稱")  # 根據 yfinance 提供的股票名稱
+    except Exception as e:
+        print(f"查詢股票名稱 {symbol} 時發生錯誤: {e}")
+        return "未知股票名稱"
 
 def get_stock_price(symbol):
     """
@@ -48,7 +46,8 @@ def get_stock_price(symbol):
         
         data = stock.history(period="1d")  # 獲取最近一天的資料
         if not data.empty:
-            return data['Close'][0]  # 取收盤價
+            price = data['Close'][0]  # 取收盤價
+            return round(price, 1)  # 僅保留小數點後一位
     except Exception as e:
         print(f"查詢股票 {symbol} 時發生錯誤: {e}")
     return None  # 若無法取得價格，返回 None
@@ -62,7 +61,7 @@ def send_stock_prices():
         messages = []
         for symbol in FIXED_STOCKS:
             price = get_stock_price(symbol)
-            stock_name = get_stock_name(symbol)  # 使用對應字典中的股票名稱
+            stock_name = get_stock_name(symbol)  # 使用網路查詢的股票名稱
             if price:
                 messages.append(f"{stock_name} ({symbol}): {price} USD" if '.' not in symbol else f"{stock_name} ({symbol}): {price} TWD")
             else:
@@ -122,7 +121,7 @@ def handle_message(event):
         messages = []
         for symbol in FIXED_STOCKS:
             price = get_stock_price(symbol)
-            stock_name = get_stock_name(symbol)  # 使用對應字典中的股票名稱
+            stock_name = get_stock_name(symbol)  # 使用網路查詢的股票名稱
             if price:
                 messages.append(f"{stock_name} ({symbol}): {price} USD" if '.' not in symbol else f"{stock_name} ({symbol}): {price} TWD")
             else:
@@ -135,7 +134,7 @@ def handle_message(event):
     elif event.message.text.startswith("查詢股票"):
         stock_code = event.message.text.replace("查詢股票", "").strip()
         price = get_stock_price(stock_code)
-        stock_name = get_stock_name(stock_code)  # 使用對應字典中的股票名稱
+        stock_name = get_stock_name(stock_code)  # 使用網路查詢的股票名稱
         if price:
             line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"{stock_name} ({stock_code}): {price} USD" if '.' not in stock_code else f"{stock_name} ({stock_code}): {price} TWD"))
         else:
