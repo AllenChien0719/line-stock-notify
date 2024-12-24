@@ -21,6 +21,9 @@ handler = WebhookHandler(CHANNEL_SECRET)
 FIXED_STOCKS = ["3093.TWO", "8070.TW", "6548.TWO", "2646.TW"]  
 USER_ID = "chienallen"  # 替換為實際的使用者 ID
 
+# 時區設置
+tz = timezone('Asia/Taipei')
+
 def get_stock_name(symbol):
     """ 根據股票代碼查詢股票名稱 """
     try:
