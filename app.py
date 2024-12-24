@@ -47,10 +47,10 @@ def get_stock_price(symbol):
     return None
 
 def send_stock_prices():
-    """ 每小時推送固定股票的最新股價 """
+    """ 股市交易日每小時整點推送固定股票的最新價格 """
     now = datetime.now(timezone("Asia/Taipei"))
     print(f"當前時間：{now}")
-    if now.weekday() < 5 and 9 <= now.hour < 13:  # 僅工作日且在 9:00 至 13:00 間推送
+    if now.weekday() < 5 and now.hour in [9, 10, 11, 12, 13]:
         messages = []
         for symbol in FIXED_STOCKS:
             price = get_stock_price(symbol)
@@ -70,7 +70,7 @@ def send_stock_prices():
 
 # 設定排程
 scheduler = BackgroundScheduler()
-scheduler.add_job(send_stock_prices, 'interval', minutes=60)
+scheduler.add_job(send_stock_prices, 'cron', day_of_week='mon-fri', hour='9-13', minute=0)
 scheduler.start()
 
 @app.route("/webhook", methods=['POST'])
