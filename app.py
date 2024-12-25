@@ -18,7 +18,7 @@ line_bot_api = LineBotApi(CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(CHANNEL_SECRET)
 
 # 固定股票代碼列表
-FIXED_STOCKS = ["3093.TWO", "8070.TW", "6548.TWO", "2646.TW"]  
+FIXED_STOCKS = ["3093.TWO", "8070.TW", "6548.TWO", "2646.TW"]
 USER_ID = "chienallen"  # 替換為實際的使用者 ID
 
 # 時區設置
@@ -47,31 +47,31 @@ def get_stock_price(symbol):
     return None
 
 def send_stock_prices():
-    """ 股市交易日每小時整點推送固定股票的最新價格 """
-    now = datetime.now(timezone("Asia/Taipei"))
-    print(f"當前時間：{now}")
-    if now.weekday() < 5 and now.hour in [9, 10, 11, 12, 13]:
-        messages = []
-        for symbol in FIXED_STOCKS:
-            price = get_stock_price(symbol)
-            stock_name = get_stock_name(symbol)
-            if price:
-                messages.append(f"{stock_name} ({symbol}): {price} TWD")
-            else:
-                messages.append(f"{stock_name} ({symbol}): 無法取得股價")
+    """ 在指定時段內每 30 分鐘推送固定股票的最新價格 """
+    try:
+        now = datetime.now(tz)
+        if now.weekday() < 5 and (8 * 60 + 30) <= (now.hour * 60 + now.minute) <= (13 * 60 + 30):
+            messages = []
+            for symbol in FIXED_STOCKS:
+                price = get_stock_price(symbol)
+                stock_name = get_stock_name(symbol)
+                if price:
+                    messages.append(f"{stock_name} ({symbol}): {price} TWD")
+                else:
+                    messages.append(f"{stock_name} ({symbol}): 無法取得股價")
 
-        if messages:
-            message_text = "\n".join(messages)
-            try:
+            if messages:
+                message_text = "\n".join(messages)
                 line_bot_api.push_message(USER_ID, TextSendMessage(text=f"股票最新報價：\n{message_text}"))
                 print(f"推送成功：\n{message_text}")
-            except Exception as e:
-                print(f"推送訊息時發生錯誤: {e}")
+    except Exception as e:
+        print(f"執行排程時發生錯誤: {e}")
 
 # 設定排程
-scheduler = BackgroundScheduler()
-scheduler.add_job(send_stock_prices, 'cron', day_of_week='mon-fri', hour='9-13', minute=0)
+scheduler = BackgroundScheduler(timezone='Asia/Taipei')
+scheduler.add_job(send_stock_prices, 'interval', minutes=30)
 scheduler.start()
+print("排程器已啟動")
 
 @app.route("/webhook", methods=['POST'])
 def webhook():
@@ -136,4 +136,4 @@ def index():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=port, threaded=True)  # 開啟多執行緒模式
