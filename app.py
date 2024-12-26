@@ -50,7 +50,7 @@ def send_stock_prices():
     """ 在指定時段內每 30 分鐘推送固定股票的最新價格 """
     try:
         now = datetime.now(tz)
-        if now.weekday() < 5 and (8 * 60 + 30) <= (now.hour * 60 + now.minute) <= (13 * 60 + 30):
+        if now.weekday() < 5 and (8 * 60) <= (now.hour * 60 + now.minute) <= (18 * 60):
             messages = []
             for symbol in FIXED_STOCKS:
                 price = get_stock_price(symbol)
@@ -136,4 +136,4 @@ def index():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
-    app.run(host='0.0.0.0', port=port, threaded=True)  # 開啟多執行緒模式
+    app.run(host='0.0.0.0', port=port, threaded=True)  # 開啟多執行線模式
